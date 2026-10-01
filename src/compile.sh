@@ -41,6 +41,6 @@ FLAGS="-O3 -std=c++23 -T linker.ld -mabi=32 -march=r3000 -r -mel -nostdlib -mexp
 "$MIPS_CXX" MenuTab.cpp ConditionBubble.cpp VanillaText.cpp Fishing.cpp Matrix.cpp Utils.cpp Files.cpp EFE.cpp MapObjects.cpp Script.cpp Partner.cpp DOOA/DOOA.cpp CombatCommon.cpp Inventory.cpp Sound.cpp Math.cpp Camera.cpp Battle.cpp Tournament.cpp DigimonData.cpp Transformation.cpp Evolution.cpp DigimonMenu.cpp -o ../compiled/Cave3.lib $FLAGS
 "$MIPS_CXX" Butterfly.cpp -o ../compiled/Cave4.lib $FLAGS
 "$MIPS_CXX" UIBox.cpp AtlasFont.cpp BuffModel.cpp ThrownItem.cpp Main.cpp BattleEndBox.cpp VS/Intro.cpp VS/InitVS.cpp VS/DigimonAI.cpp VS/TimeoutWindow.cpp VS/SelectDigimon.cpp VS/SelectMapMode.cpp ItemMenu.cpp MonochromonMoodBubble.cpp Misc.cpp RecycleShop.cpp BitsBox.cpp ItemMenuAmountBox.cpp -o ../compiled/Cave5.lib $FLAGS
-"$MIPS_CXX" DebugMenu.cpp -o ../compiled/Cave6.lib $FLAGS
+"$MIPS_CXX" DebugMenu.cpp Curling.cpp -o ../compiled/Cave6.lib $FLAGS
 
 cd -
