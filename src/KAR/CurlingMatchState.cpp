@@ -419,7 +419,7 @@ namespace
                 }
                 break;
             case CurlingMatchState::WAIT_FOR_HINT_BOX:
-                if (UI_BOX_DATA[0].state == 1) {
+                if (KAR_isHintBoxOpen()) {
                     KAR_MATCH_STATE = CurlingMatchState::SHOW_HINT;
                 }
                 break;
@@ -449,7 +449,9 @@ namespace
 void KAR_tick()
 {
     // Vanilla continues this ordered tail even when the state update finishes the match.
+    KAR_tickHints();
     tickMatchState();
+    KAR_renderHints();
     KAR_renderAimArrow();
     KAR_renderStoneCursor();
     KAR_renderScores();
