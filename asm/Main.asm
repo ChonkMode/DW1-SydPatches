@@ -7,23 +7,23 @@
 .org 0x801130d8
   jal recalculatePPandArena
 
-; VERY DIRTY drawString2 patch, t2 *seems* unused, but there is literally no guarantee!!!
-;.org 0x800ff26c
-;  clear t2
-.org 0x800ffb34
-  clear t2
-.org 0x8010ab20
-  clear t2
+; Retained text preparation now composes one bounded row with shared font metrics.
+.org drawString2
+.area 0x80100e40-., 0
+  j drawScriptTextLine
+  nop
 
-.org 0x80100dd8
-  sll v0,t2,0x10
+  .notice "Empty space left: " + (0x80100e40-.) + " bytes"
+.endarea
 
-.org 0x80100de4
-  andi t2,v0,0xffff
+; drawScriptTextLine: pass the caller's full-row or half-row pixel extent.
+.org 0x800ffb30
+  jal drawScriptTextLine
+  lw a3,0x2c(sp)
 
-.org 0x80100df8
-  li t2,0xc
-  sll v0,t2,0x10
+.org 0x8010ab1c
+  jal drawScriptTextLine
+  li a3,255
 
 .org 0x80111ba4
   li.u a3,renderMainMenuBackground

@@ -27,6 +27,7 @@ constexpr dtl::array<RGB8, 17> TEXT_COLORS{{
 
 extern "C"
 {
+    int32_t drawScriptTextLine(const uint8_t* text, int16_t x, int16_t y, int32_t width);
     [[deprecated]]
     void drawString(const char* string, int32_t x, int32_t y);
     void drawEntityText(int32_t color, int32_t digitCount, int32_t x, int32_t y, int32_t value, int32_t layer);

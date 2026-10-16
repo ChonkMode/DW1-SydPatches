@@ -86,10 +86,10 @@ NAMING_DATA:
 
 ; override some menu data
 .org 0x80123860
-.area 0x80124c0c-.
+.area 0x80124c0c-., 0
+  .importobj "compiled/RetainedText.lib"
 
   .notice "Empty space left: " + (0x80124c0c-.) + " bytes"
-  .fill 0x80124c0c-.
 .endarea
 
 ; override map data

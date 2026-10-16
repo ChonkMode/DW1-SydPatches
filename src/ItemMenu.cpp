@@ -13,6 +13,7 @@
 #include "SingleCardConfirmMenu.hpp"
 #include "Sound.hpp"
 #include "UIElements.hpp"
+#include "VanillaText.hpp"
 #include "constants.hpp"
 #include "extern/dtl/algorithm.hpp"
 #include "extern/dw1.hpp"
@@ -784,7 +785,7 @@ extern "C"
         auto linePtr = TEXTBOX_LINES_PTR + stringOffset * 0x40;
         if (coords.posX != 0) linePtr += 0x20;
 
-        drawString2(linePtr, coords.posX, stringOffset * 12, 1);
+        drawScriptTextLine(linePtr, coords.posX, stringOffset * 12, coords.width);
     }
 
     void itemMenuCursorTop(ItemMenuBox* menu, int32_t count, int32_t mode)
