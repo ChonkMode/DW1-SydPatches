@@ -102,12 +102,12 @@ namespace
 
     bool readSelectedItemMerit()
     {
-        auto menu      = getItemMenuFromType();
-        auto item      = menu->scrollOffset + menu->cursorOffset;
-        auto entry     = reinterpret_cast<ItemMenuSellEntry*>(menu->itemList[item]);
-        SHOP_ITEM_TYPE = entry->itemType;
+        auto menu         = getItemMenuFromType();
+        const auto item   = static_cast<uint8_t>(menu->scrollOffset) + static_cast<uint8_t>(menu->cursorOffset);
+        const auto& entry = reinterpret_cast<const ItemMenuSellEntry*>(menu->itemList)[item];
+        SHOP_ITEM_TYPE    = entry.itemType;
 
-        if (static_cast<ItemType>(SHOP_ITEM_TYPE) == ItemType::NONE || entry->amount == 0) {
+        if (static_cast<ItemType>(SHOP_ITEM_TYPE) == ItemType::NONE || entry.amount == 0) {
             playSound(0, 11);
             return false;
         }
