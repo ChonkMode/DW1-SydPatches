@@ -322,6 +322,7 @@ void AtlasString::translate(int32_t x, int32_t y)
 
 void AtlasString::setPosition(int32_t x, int32_t y)
 {
+    if (data.size() == 0) return;
     const auto old_x = data[0].x;
 
     for (auto& entry : data) {
