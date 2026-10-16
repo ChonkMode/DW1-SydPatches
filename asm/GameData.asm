@@ -6,58 +6,52 @@
 
 ; unused libgs functions — repurposed as Cave6
 .org 0x800957c0
-.area 0x80096bcc-.
+.area 0x80096bcc-., 0
   .importobj "compiled/Cave6.lib"
 
   .notice "Cave6 Empty space left: " + (0x80096bcc-.) + " bytes"
-  .fill 0x80096bcc-.
 .endarea
 
 .org 0x800a0a50
-.area 0x800afd78-.
+.area 0x800afd78-., 0
   .importobj "compiled/Cave1.lib"
 
   .notice "Cave1 Empty space left: " + (0x800afd78-.) + " bytes"
-  .fill 0x800afd78-.
 .endarea
 
 .org 0x800b3d84
-.area 0x800c67b4-.
+.area 0x800c67b4-., 0
   .importobj "compiled/Cave2.lib"
 
   .notice "Cave2 Empty space left: " + (0x800c67b4-.) + " bytes"
-  .fill 0x800c67b4-.
 .endarea
 
 .org 0x800d3078
-.area 0x800e9294-.
+.area 0x800e9294-., 0
   .importobj "compiled/Cave3.lib"
 
   .notice "Cave3 Empty space left: " + (0x800e9294-.) + " bytes"
-  .fill 0x800e9294-.
 .endarea
 
 .org 0x800e9ce8
-.area 0x800e9ff4-.
+.area 0x800e9ff4-., 0
   .importobj "compiled/Cave4.lib"
 
   .notice "Cave4 Empty space left: " + (0x800e9ff4-.) + " bytes"
-  .fill 0x800e9ff4-.
 .endarea
 
 .org 0x800ec520
-.area 0x800ff2a8-.
+.area 0x800ff2a8-., 0
   .importobj "compiled/Cave5.lib"
 
   .notice "Cave5 Empty space left: " + (0x800ff2a8-.) + " bytes"
-  .fill 0x800ff2a8-.
 .endarea
 
 ;;; Initialized memory, in vanilla only for data
 .notice "Start Memory Caves"
 
 .org 0x8011d190
-.area 0x8012344c-.
+.area 0x8012344c-., 0
   .importobj "compiled/GameData.lib"
 ;;;
 ; Relocated game data start. 
@@ -81,7 +75,6 @@ NAMING_DATA:
   .importobj "compiled/CustomUI.lib"
   
   .notice "Empty space left: " + (0x8012344c-.) + " bytes"
-  .fill 0x8012344c-.
 .endarea
 
 ; override some menu data
@@ -94,34 +87,30 @@ NAMING_DATA:
 
 ; override map data
 .org 0x801289f4
-.area 0x801292d4
+.area 0x801292d4-., 0
   .importobj "compiled/MapData.lib"
 
   .notice "Empty space left: " + (0x801292d4-.) + " bytes"
-  .fill 0x801292d4-.
 .endarea
 
 ; override vanilla raise data, dynamic library data
 .org 0x8012abec
-.area 0x8012bacc-.
+.area 0x8012bacc-., 0
 
   .notice "Empty space left: " + (0x8012bacc-.) + " bytes"
-  .fill 0x8012bacc-.
 .endarea
 
 ; override condition bubble data, some file paths
 .org 0x8012cb8c
-.area 0x8012ceb4-.
+.area 0x8012ceb4-., 0
 
   .notice "Empty space left: " + (0x8012ceb4-.) + " bytes"
-  .fill 0x8012ceb4-.
 .endarea
 
 .org 0x8012f36c
-.area 0x8012f6d0
+.area 0x8012f6d0-., 0
 
   .notice "Empty space left: " + (0x8012f6d0-.) + " bytes"
-  .fill 0x8012f6d0-.
 .endarea
 
 ;;; Not caves, uninitialized memory
