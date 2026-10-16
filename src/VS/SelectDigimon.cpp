@@ -39,7 +39,9 @@ namespace
 
         getAtlasVanilla().renderSlow("Press Start", depth, string1);
         getAtlasVanilla().renderSlow("to begin", depth, string2);
-        UIBox(RECT{.x = x, .y = y, .width = WIDTH, .height = HEIGHT}, {0, 0, 0}, true).render(depth);
+        UIBox(RECT{.x = x, .y = y, .width = WIDTH, .height = HEIGHT},
+              {.color = {}, .playOpenSound = false, .playCloseSound = false})
+            .render(depth);
     }
 
     void VS__createPressStartToBeginBox(int32_t player)

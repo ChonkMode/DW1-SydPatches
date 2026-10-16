@@ -92,7 +92,9 @@ namespace
         }
         libgs_GsSetWorkBase(prim);
 
-        UIBox{RECT{.x = -90, .y = -70, .width = 180, .height = 128}, UIBox::DEFAULT_COLOR, false}.render(6);
+        UIBox{RECT{.x = -90, .y = -70, .width = 180, .height = 128},
+              {.fill = UIBox::Fill::OPAQUE, .playOpenSound = false, .playCloseSound = false}}
+            .render(6);
     }
 
     void renderMapSelectBox(int32_t)
@@ -135,7 +137,9 @@ namespace
         }
         libgs_GsSetWorkBase(prim);
 
-        UIBox{RECT{.x = -90, .y = -70, .width = 180, .height = 128}, UIBox::DEFAULT_COLOR, false}.render(6);
+        UIBox{RECT{.x = -90, .y = -70, .width = 180, .height = 128},
+              {.fill = UIBox::Fill::OPAQUE, .playOpenSound = false, .playCloseSound = false}}
+            .render(6);
     }
 
     bool isKeyPressedByAnyPlayer(InputButtons button)

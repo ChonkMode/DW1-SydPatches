@@ -1,38 +1,40 @@
 #include "UIBox.hpp"
 
 #include "Math.hpp"
+#include "Sound.hpp"
 #include "UIElements.hpp"
 
-UIBox::UIBox(RECT final, RGB8 color, bool isSemiTrans, dtl::optional<RECT> start)
-    : final(final)
-    , start(start)
-    , color(color)
-    , semiTrans(isSemiTrans)
+UIBox::UIBox(RECT final, Style style, dtl::optional<RECT> start)
+    : start(start)
+    , final(final)
     , state(start.has_value() ? State::OPENING : State::OPENED)
+    , style(style)
 {
+    if (style.playOpenSound) playSound(0, 0);
 }
 
 void UIBox::close()
 {
-    state = State::CLOSING;
+    if (state == State::CLOSED || state == State::CLOSING) return;
+    state               = State::CLOSING;
+    closingSoundPending = true;
 }
 void UIBox::closeTo(RECT target)
 {
     if (state == State::CLOSED || state == State::CLOSING) return;
     start = target;
-    // The last opening tick advances past the final drawn extent.
+    // Close from the last drawn extent, as vanilla animated dialogue frames do.
+    const bool wasFullyOpened = frame == 5;
     if (frame > 0) --frame;
     close();
+    closingSoundPending = wasFullyOpened;
 }
 
 void UIBox::open()
 {
-    state = State::OPENING;
-}
-
-UIBox::State UIBox::getState()
-{
-    return state;
+    state               = State::OPENING;
+    closingSoundPending = false;
+    if (style.playOpenSound) playSound(0, 0);
 }
 
 void UIBox::tick()
@@ -42,6 +44,10 @@ void UIBox::tick()
         case State::CLOSED: break;
         case State::CLOSING:
         {
+            if (closingSoundPending) {
+                if (style.playCloseSound) playSound(0, 1);
+                closingSoundPending = false;
+            }
             if (!start.has_value() || frame-- <= 0) state = State::CLOSED;
             break;
         }
@@ -88,16 +94,17 @@ void UIBox::renderOpeningClosing(int32_t depth)
 
 void UIBox::renderOpened(int32_t depth)
 {
-    renderUIBoxBorder(&final, depth);
-
-    GsBOXF box;
-    box.attribute = semiTrans != 0 ? 0x40000000 : 0;
-    box.r         = color.red;
-    box.g         = color.green;
-    box.b         = color.blue;
+    if (style.drawBorder) renderUIBoxBorder(&final, depth);
+    if (style.fill == Fill::NONE) return;
+    GsBOXF box{};
+    box.attribute = style.fill == Fill::OPAQUE ? 0 : 0x40000000;
+    box.r         = style.color.red;
+    box.g         = style.color.green;
+    box.b         = style.color.blue;
     box.x         = final.x + 4;
     box.y         = final.y + 3;
     box.width     = final.width - 8;
     box.height    = final.height - 3;
     libgs_GsSortBoxFill(&box, ACTIVE_ORDERING_TABLE, depth);
+    if (style.fill == Fill::DOUBLE) libgs_GsSortBoxFill(&box, ACTIVE_ORDERING_TABLE, depth);
 }

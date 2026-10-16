@@ -242,8 +242,11 @@ namespace
                 options[i] = i;
             }
             playSound(0, 0);
-            prompt.reset(
-                new SelectTextbox(FINAL_RECT, dtl::move(labels), dtl::move(options), PROMPT_START_RECT, RGB8{}, true));
+            prompt.reset(new SelectTextbox(FINAL_RECT,
+                                           dtl::move(labels),
+                                           dtl::move(options),
+                                           PROMPT_START_RECT,
+                                           UIBox::Style{.color = {}, .playOpenSound = false, .playCloseSound = false}));
             KAR_HINT_STATE = 3;
             return 0;
         }
@@ -270,8 +273,7 @@ namespace
             hint.reset(new ConfirmTextbox(FINAL_RECT,
                                           prepareHint(group),
                                           group < 4 ? PROMPT_START_RECT : HINT_START_RECT,
-                                          RGB8{},
-                                          true));
+                                          UIBox::Style{.color = {}, .playOpenSound = false, .playCloseSound = false}));
             playSound(0, 0);
             return 1;
         }

@@ -569,17 +569,18 @@ void ChartView::Private::tick()
             int16_t posX         = cols[selectedCol].posX;
             int16_t posY         = CHART_ENTRY_BASE_Y + CHART_ENTRY_OFFSET_Y * selectedRow;
             RECT start           = {
-                .x      = static_cast<int16_t>(posX),
-                .y      = static_cast<int16_t>(posY),
-                .width  = 10,
-                .height = 10,
+                          .x      = static_cast<int16_t>(posX),
+                          .y      = static_cast<int16_t>(posY),
+                          .width  = 10,
+                          .height = 10,
             };
 
             auto* para  = getDigimonData(selectedDigimon);
             nameString  = getAtlasVanilla().render(getDigimonData(selectedDigimon)->name, NAME_LABEL);
             levelString = getAtlasVanilla().render(getLevelName(para->level), LEVEL_LABEL);
-            detailView  = UIBox(final, UIBox::DEFAULT_COLOR, false, start);
-            state       = 2;
+            detailView =
+                UIBox(final, {.fill = UIBox::Fill::OPAQUE, .playOpenSound = false, .playCloseSound = false}, start);
+            state = 2;
         }
     }
     else if (state == 0) {

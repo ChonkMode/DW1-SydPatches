@@ -35,12 +35,8 @@ namespace
     }};
 } // namespace
 
-Textbox::Textbox(RECT bounds,
-                 dtl::runtime_array<AtlasString> text,
-                 dtl::optional<RECT> origin,
-                 RGB8 color,
-                 bool semiTrans)
-    : frame(bounds, color, semiTrans, origin)
+Textbox::Textbox(RECT bounds, dtl::runtime_array<AtlasString> text, dtl::optional<RECT> origin, UIBox::Style style)
+    : frame(bounds, style, origin)
     , bounds(bounds)
     , origin(origin)
     , text(dtl::move(text))
@@ -52,10 +48,9 @@ SelectTextbox::SelectTextbox(RECT bounds,
                              dtl::runtime_array<AtlasString> text,
                              dtl::runtime_array<uint32_t> options,
                              dtl::optional<RECT> origin,
-                             RGB8 color,
-                             bool semiTrans,
+                             UIBox::Style style,
                              uint32_t initial)
-    : ConfirmTextbox(bounds, dtl::move(text), origin, color, semiTrans)
+    : ConfirmTextbox(bounds, dtl::move(text), origin, style)
     , options(dtl::move(options))
     , selected(this->options.size() == 0 ? 0 : dtl::min(initial, this->options.size() - 1))
 {

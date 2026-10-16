@@ -14,8 +14,7 @@ public:
     Textbox(RECT bounds,
             dtl::runtime_array<AtlasString> text,
             dtl::optional<RECT> origin = {},
-            RGB8 color                 = UIBox::DEFAULT_COLOR,
-            bool semiTrans             = false);
+            UIBox::Style style         = {});
     void tick();
     void close(dtl::optional<RECT> target = {});
     void replacePage(dtl::runtime_array<AtlasString> page);
@@ -53,8 +52,7 @@ public:
                   dtl::runtime_array<AtlasString> text,
                   dtl::runtime_array<uint32_t> options,
                   dtl::optional<RECT> origin = {},
-                  RGB8 color                 = UIBox::DEFAULT_COLOR,
-                  bool semiTrans             = false,
+                  UIBox::Style style         = {},
                   uint32_t initial           = 0);
     dtl::optional<uint32_t> tick();
     void render(int32_t depth);
