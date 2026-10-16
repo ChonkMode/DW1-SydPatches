@@ -1,3 +1,4 @@
+#include "../GameObjects.hpp"
 #include "Curling.hpp"
 #include "CurlingTypes.hpp"
 
@@ -145,10 +146,36 @@ namespace
     constexpr RGB8 HINT_WHITE        = {216, 216, 216};
     constexpr RGB8 HINT_TITLE        = {255, 255, 0};
 
-    // The overlay loader runs no destructors. Existing start/finish paths reset both concrete owners.
-    constinit dtl::unique_ptr<ConfirmTextbox> hint;
-    constinit dtl::unique_ptr<SelectTextbox> prompt;
-    int32_t pendingPromptChoice{};
+    class CurlingSession
+    {
+    public:
+        [[gnu::optimize("Os")]]
+        ~CurlingSession()
+        {
+            if (registered) removeObject(ObjectID::KAR, KAR_OBJECT_INSTANCE);
+        }
+        bool admit()
+        {
+            if (!registered)
+                registered = addObject(ObjectID::KAR, KAR_OBJECT_INSTANCE, KAR_tickStones, KAR_renderScene);
+            return registered;
+        }
+        bool tickHints();
+        void renderHints();
+        bool isHintBoxOpen();
+        int32_t tickYesNoPrompt(bool confirmed);
+        int32_t tickHintBox(int32_t group, bool confirmed);
+
+    private:
+        void resetHints();
+        dtl::unique_ptr<ConfirmTextbox> hint;
+        dtl::unique_ptr<SelectTextbox> prompt;
+        bool registered{};
+        int32_t pendingPromptChoice{};
+    };
+
+    // The overlay loader runs no destructors; release at the supported exit boundaries.
+    constinit dtl::unique_ptr<CurlingSession> session;
 
     [[gnu::optimize("Os")]]
     dtl::runtime_array<AtlasString> prepareHint(int32_t group)
@@ -165,105 +192,150 @@ namespace
         }
         return page;
     }
-} // namespace
 
-[[gnu::optimize("Os")]]
-void KAR_resetHints()
+    [[gnu::optimize("Os")]]
+    void CurlingSession::resetHints()
+    {
+        hint.reset();
+        prompt.reset();
+        pendingPromptChoice = 0;
+    }
+
+    bool CurlingSession::tickHints()
+    {
+        if (hint) return hint->tick();
+        if (prompt) {
+            const auto choice = prompt->tick();
+            if (choice.has_value()) {
+                pendingPromptChoice = choice.value() + 1;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void CurlingSession::renderHints()
+    {
+        if (hint) hint->render(6);
+        if (prompt) prompt->render(6);
+    }
+
+    bool CurlingSession::isHintBoxOpen()
+    {
+        return (hint && hint->isOpened()) || (prompt && prompt->isOpened());
+    }
+
+    [[gnu::optimize("Os")]]
+    int32_t CurlingSession::tickYesNoPrompt(bool confirmed)
+    {
+        if (KAR_HINT_STATE == 0) {
+            KAR_HINT_STATE = 1;
+            return 0;
+        }
+        if (KAR_HINT_STATE == 1) {
+            resetHints();
+            dtl::runtime_array<AtlasString> labels(2);
+            dtl::runtime_array<uint32_t> options(2);
+            for (uint32_t i = 0; i < PROMPT_STRINGS.size(); ++i) {
+                labels[i] =
+                    getAtlasVanilla().render(PROMPT_STRINGS[i], {.x = 0, .y = 0, .baseClut = 1, .color = HINT_WHITE});
+                options[i] = i;
+            }
+            playSound(0, 0);
+            prompt.reset(
+                new SelectTextbox(FINAL_RECT, dtl::move(labels), dtl::move(options), PROMPT_START_RECT, RGB8{}, true));
+            KAR_HINT_STATE = 3;
+            return 0;
+        }
+        if (confirmed) {
+            prompt->close();
+            playSound(0, 1);
+        }
+        if (prompt->isClosed()) {
+            const auto result = pendingPromptChoice;
+            resetHints();
+            return result;
+        }
+        KAR_HINT_STATE = 3 + prompt->selection();
+        return 0;
+    }
+
+    [[gnu::optimize("Os")]]
+    int32_t CurlingSession::tickHintBox(int32_t group, bool confirmed)
+    {
+        if (KAR_HINT_STATE == 0) return 0;
+        if (!hint) {
+            if (KAR_HINT_STATE != 1) return 0;
+            resetHints();
+            hint.reset(new ConfirmTextbox(FINAL_RECT,
+                                          prepareHint(group),
+                                          group < 4 ? PROMPT_START_RECT : HINT_START_RECT,
+                                          RGB8{},
+                                          true));
+            playSound(0, 0);
+            return 1;
+        }
+        if (hint->isClosed()) {
+            resetHints();
+            return 0;
+        }
+        if (confirmed) {
+            ++KAR_HINT_STATE;
+            playSound(0, 3);
+            const auto pageCount = (HINT_OFFSETS[group + 1] - HINT_OFFSETS[group]) / LINES_PER_PAGE;
+            if (KAR_HINT_STATE > pageCount) {
+                KAR_HINT_STATE = -1;
+                hint->close();
+                playSound(0, 1);
+            }
+            else
+                hint->replacePage(prepareHint(group));
+        }
+        return 1;
+    }
+
+} // namespace
+void KAR_createSession()
 {
-    hint.reset();
-    prompt.reset();
-    pendingPromptChoice = 0;
+    session = dtl::make_unique<CurlingSession>();
+    session->admit();
+}
+
+void KAR_end()
+{
+    session.reset();
+}
+
+void KAR_tick()
+{
+    if (session) {
+        if (session->admit()) KAR_tickMatch();
+    }
+    else if (KAR_MATCH_STATE == CurlingMatchState::FINISHED)
+        KAR_tickMatch();
 }
 
 bool KAR_tickHints()
 {
-    if (hint) return hint->tick();
-    if (prompt) {
-        const auto choice = prompt->tick();
-        if (choice.has_value()) {
-            pendingPromptChoice = choice.value() + 1;
-            return true;
-        }
-    }
-    return false;
+    return session && session->tickHints();
 }
 
 void KAR_renderHints()
 {
-    if (hint) hint->render(6);
-    if (prompt) prompt->render(6);
+    if (session) session->renderHints();
 }
 
 bool KAR_isHintBoxOpen()
 {
-    return (hint && hint->isOpened()) || (prompt && prompt->isOpened());
+    return session && session->isHintBoxOpen();
 }
 
-[[gnu::optimize("Os")]]
 int32_t KAR_tickYesNoPrompt(bool confirmed)
 {
-    if (KAR_HINT_STATE == 0) {
-        KAR_HINT_STATE = 1;
-        return 0;
-    }
-    if (KAR_HINT_STATE == 1) {
-        KAR_resetHints();
-        dtl::runtime_array<AtlasString> labels(2);
-        dtl::runtime_array<uint32_t> options(2);
-        for (uint32_t i = 0; i < PROMPT_STRINGS.size(); ++i) {
-            labels[i] =
-                getAtlasVanilla().render(PROMPT_STRINGS[i], {.x = 0, .y = 0, .baseClut = 1, .color = HINT_WHITE});
-            options[i] = i;
-        }
-        playSound(0, 0);
-        prompt.reset(
-            new SelectTextbox(FINAL_RECT, dtl::move(labels), dtl::move(options), PROMPT_START_RECT, RGB8{}, true));
-        KAR_HINT_STATE = 3;
-        return 0;
-    }
-    if (confirmed) {
-        prompt->close();
-        playSound(0, 1);
-    }
-    if (prompt->isClosed()) {
-        const auto result = pendingPromptChoice;
-        KAR_resetHints();
-        return result;
-    }
-    KAR_HINT_STATE = 3 + prompt->selection();
-    return 0;
+    return session ? session->tickYesNoPrompt(confirmed) : 0;
 }
 
-[[gnu::optimize("Os")]]
 int32_t KAR_tickHintBox(int32_t group, bool confirmed)
 {
-    if (KAR_HINT_STATE == 0) return 0;
-    if (!hint) {
-        if (KAR_HINT_STATE != 1) return 0;
-        KAR_resetHints();
-        hint.reset(new ConfirmTextbox(FINAL_RECT,
-                                      prepareHint(group),
-                                      group < 4 ? PROMPT_START_RECT : HINT_START_RECT,
-                                      RGB8{},
-                                      true));
-        playSound(0, 0);
-        return 1;
-    }
-    if (hint->isClosed()) {
-        KAR_resetHints();
-        return 0;
-    }
-    if (confirmed) {
-        ++KAR_HINT_STATE;
-        playSound(0, 3);
-        const auto pageCount = (HINT_OFFSETS[group + 1] - HINT_OFFSETS[group]) / LINES_PER_PAGE;
-        if (KAR_HINT_STATE > pageCount) {
-            KAR_HINT_STATE = -1;
-            hint->close();
-            playSound(0, 1);
-        }
-        else
-            hint->replacePage(prepareHint(group));
-    }
-    return 1;
+    return session ? session->tickHintBox(group, confirmed) : 0;
 }
