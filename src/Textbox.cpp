@@ -39,6 +39,7 @@ Textbox::Textbox(RECT bounds, dtl::runtime_array<AtlasString> text, dtl::optiona
     : frame(bounds, style, origin)
     , bounds(bounds)
     , origin(origin)
+    , style(style)
     , text(dtl::move(text))
 {
     layoutText();
@@ -96,6 +97,12 @@ dtl::optional<uint32_t> SelectTextbox::tick()
         playSound(0, 2);
     }
     return {};
+}
+
+void Textbox::openFrom(RECT start)
+{
+    origin = start;
+    frame  = UIBox(bounds, style, start);
 }
 
 void Textbox::close(dtl::optional<RECT> target)

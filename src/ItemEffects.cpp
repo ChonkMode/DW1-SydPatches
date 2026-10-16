@@ -120,10 +120,6 @@ extern "C"
         }
         PARTNER_PARA.condition.isSick = true;
         Tamer_setState(20);
-        clearTextArea();
-        setTextColor(10);
-        auto width = drawStringNew(&vanillaFont, PARTNER_ENTITY.name, 704, 256 + 0x78) / 4;
-        setTextColor(1);
-        drawStringNew(&vanillaFont, isSickStr, 704 + width + 1, 256 + 0x78);
+        prepareTamerSicknessTextbox();
     }
 }

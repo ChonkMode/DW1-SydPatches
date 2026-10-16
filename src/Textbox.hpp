@@ -16,6 +16,8 @@ public:
             dtl::optional<RECT> origin = {},
             UIBox::Style style         = {});
     void tick();
+    void openFrom(RECT start);
+    bool isClosing() const { return frame.getState() == UIBox::State::CLOSING; }
     void close(dtl::optional<RECT> target = {});
     void replacePage(dtl::runtime_array<AtlasString> page);
     void render(int32_t depth);
@@ -27,6 +29,7 @@ protected:
     UIBox frame;
     RECT bounds;
     dtl::optional<RECT> origin;
+    UIBox::Style style;
     dtl::runtime_array<AtlasString> text;
 
 private:

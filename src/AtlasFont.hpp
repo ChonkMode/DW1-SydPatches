@@ -73,8 +73,9 @@ public:
     void renderSlow(const char* string, int32_t depth, const RenderSettings& settings) const;
     void renderSlow(const uint8_t* string, int32_t depth, const RenderSettings& settings) const;
 
-private:
     int32_t getWidth(const uint8_t* string) const;
+
+private:
     Position getPosition(const uint8_t* string, const RenderSettings& settings) const;
 
     Font* font;

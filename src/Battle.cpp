@@ -1,4 +1,5 @@
 #include "Battle.h"
+#include "TamerNotice.hpp"
 
 #include "BuffModel.hpp"
 #include "Camera.hpp"
@@ -526,6 +527,7 @@ extern "C"
 
     BattleResult startBattle(uint32_t talkedToEntity)
     {
+        cancelTamerNotice();
         GAME_STATE       = 1;
         STORED_TAMER_POS = TAMER_ENTITY.posData->location;
         unsetCameraFollowPlayer();
