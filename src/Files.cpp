@@ -262,8 +262,10 @@ extern "C"
 
         if (request->state == 1) {
             auto remainingSectors = libcd_CdReadSync(1, nullptr);
-            if (remainingSectors < 0)
-                request->state = 2; // on error, restart request
+            if (remainingSectors < 0) {
+                request->state = 2; // vanilla retries without completing the request
+                return;
+            }
             else if (remainingSectors == 0) {
                 FILE_REQUEST_CALLBACK2.isEnabled = false;
                 if (request->finishCallback) request->finishCallback(request->finishCallbackParam);
