@@ -19,8 +19,7 @@ public:
             const TextboxLine* lines,
             uint32_t lineCount,
             dtl::optional<RECT> origin = {},
-            RGB8 color                 = UIBox::DEFAULT_COLOR,
-            bool semiTrans             = false);
+            UIBox::Style style         = {});
     void tick();
     void close(dtl::optional<RECT> target = {});
     void replacePage(const TextboxLine* lines, uint32_t lineCount);
@@ -56,8 +55,7 @@ public:
                   uint32_t lineCount,
                   dtl::runtime_array<uint32_t> options,
                   dtl::optional<RECT> origin = {},
-                  RGB8 color                 = UIBox::DEFAULT_COLOR,
-                  bool semiTrans             = false,
+                  UIBox::Style style         = {},
                   uint32_t initial           = 0);
     dtl::optional<uint32_t> tick();
     void render(int32_t depth);

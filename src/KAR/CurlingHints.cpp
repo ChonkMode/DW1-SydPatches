@@ -235,13 +235,13 @@ namespace
                 options[i] = i;
             }
             playSound(0, 0);
-            prompt         = dtl::make_unique<SelectTextbox>(FINAL_RECT,
-                                                     labels.data(),
-                                                     labels.size(),
-                                                     dtl::move(options),
-                                                     PROMPT_START_RECT,
-                                                     RGB8{},
-                                                     true);
+            prompt = dtl::make_unique<SelectTextbox>(
+                FINAL_RECT,
+                labels.data(),
+                labels.size(),
+                dtl::move(options),
+                PROMPT_START_RECT,
+                UIBox::Style{.color = {}, .playOpenSound = false, .playCloseSound = false});
             KAR_HINT_STATE = 3;
             return 0;
         }
@@ -265,12 +265,12 @@ namespace
             if (KAR_HINT_STATE != 1) return 0;
             resetHints();
             const auto page = prepareHint(group);
-            hint            = dtl::make_unique<ConfirmTextbox>(FINAL_RECT,
-                                                    page.data(),
-                                                    page.size(),
-                                                    group < 4 ? PROMPT_START_RECT : HINT_START_RECT,
-                                                    RGB8{},
-                                                    true);
+            hint            = dtl::make_unique<ConfirmTextbox>(
+                FINAL_RECT,
+                page.data(),
+                page.size(),
+                group < 4 ? PROMPT_START_RECT : HINT_START_RECT,
+                UIBox::Style{.color = {}, .playOpenSound = false, .playCloseSound = false});
             playSound(0, 0);
             return 1;
         }

@@ -79,9 +79,11 @@ namespace
 
     struct Data
     {
-        UIBox statsBox{finalPos, {}, true, getStartPos()};
-        UIBox bitsBox{getBitBoxRect(), {}, true, getStartPos()};
-        UIBox finalBitsBox{balanceFinalPos, {0x2D, 0x38, 0x40}, false, getStartPos()};
+        UIBox statsBox{finalPos, {.color = {}, .playOpenSound = false, .playCloseSound = false}, getStartPos()};
+        UIBox bitsBox{getBitBoxRect(), {.color = {}, .playOpenSound = false, .playCloseSound = false}, getStartPos()};
+        UIBox finalBitsBox{balanceFinalPos,
+                           {.fill = UIBox::Fill::OPAQUE, .playOpenSound = false, .playCloseSound = false},
+                           getStartPos()};
         int32_t bitsToGain{};
         int16_t statsTimer{};
 

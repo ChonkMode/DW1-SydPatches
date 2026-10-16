@@ -44,9 +44,8 @@ Textbox::Textbox(RECT bounds,
                  const TextboxLine* lines,
                  uint32_t lineCount,
                  dtl::optional<RECT> origin,
-                 RGB8 color,
-                 bool semiTrans)
-    : frame(bounds, color, semiTrans, origin)
+                 UIBox::Style style)
+    : frame(bounds, style, origin)
     , bounds(bounds)
     , origin(origin)
 {
@@ -128,10 +127,9 @@ SelectTextbox::SelectTextbox(RECT bounds,
                              uint32_t lineCount,
                              dtl::runtime_array<uint32_t> options,
                              dtl::optional<RECT> origin,
-                             RGB8 color,
-                             bool semiTrans,
+                             UIBox::Style style,
                              uint32_t initial)
-    : Textbox(bounds, lines, lineCount, origin, color, semiTrans)
+    : Textbox(bounds, lines, lineCount, origin, style)
     , options(dtl::move(options))
     , selected(this->options.size() == 0 ? 0 : dtl::min(initial, this->options.size() - 1))
 {
