@@ -1,4 +1,5 @@
 #include "Main.hpp"
+#include "TamerNotice.hpp"
 
 #include "AtlasFont.hpp"
 #include "Camera.hpp"
@@ -83,6 +84,7 @@ namespace
 
     void cleanupGame()
     {
+        cancelTamerNotice();
         removeObject(ObjectID::MAP, 0);
         removeObject(ObjectID::POOP, 0);
         // vanilla removes 0xFA6, but it seems to be never added anywhere?

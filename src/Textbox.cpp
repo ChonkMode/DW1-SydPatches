@@ -5,6 +5,7 @@
 #include "Math.hpp"
 #include "Sound.hpp"
 #include "UIElements.hpp"
+#include "Utils.hpp"
 
 namespace
 {
@@ -48,10 +49,21 @@ Textbox::Textbox(RECT bounds,
     : frame(bounds, style, origin)
     , bounds(bounds)
     , origin(origin)
+    , style(style)
 {
     replacePage(lines, lineCount);
 }
 
+Textbox::Textbox(RECT bounds, const TextboxRow* rows, uint32_t rowCount, dtl::optional<RECT> origin, UIBox::Style style)
+    : frame(bounds, style, origin)
+    , bounds(bounds)
+    , origin(origin)
+    , style(style)
+{
+    replacePage(rows, rowCount);
+}
+
+[[gnu::optimize("Os")]]
 void Textbox::replacePage(const TextboxLine* lines, uint32_t lineCount)
 {
     text = dtl::runtime_array<AtlasString>(lineCount);
@@ -64,11 +76,66 @@ void Textbox::replacePage(const TextboxLine* lines, uint32_t lineCount)
                                       .color    = lines[i].color});
 }
 
+[[gnu::optimize("Os")]]
+void Textbox::replacePage(const TextboxRow* rows, uint32_t rowCount)
+{
+    text = dtl::runtime_array<AtlasString>(rowCount);
+    for (uint32_t row = 0; row < rowCount; ++row) {
+        const auto& source = rows[row];
+        uint32_t count = 0, visibleRuns = 0;
+        for (uint32_t i = 0; i < source.runCount; ++i) {
+            const auto& run = source.runs[i];
+            if (run.visible && run.text[0]) {
+                count += jis_len(reinterpret_cast<const uint8_t*>(run.text));
+                ++visibleRuns;
+            }
+        }
+        AtlasString rowText;
+        if (visibleRuns > 1) rowText.data = dtl::runtime_array<SPRT>(count);
+        uint32_t remaining = count;
+        int32_t width      = 0;
+        for (uint32_t i = 0; i < source.runCount; ++i) {
+            const auto& run = source.runs[i];
+            width += run.gapBefore;
+            if (!run.text[0]) continue;
+            if (!run.visible) {
+                width += getAtlasVanilla().getWidth(reinterpret_cast<const uint8_t*>(run.text));
+                continue;
+            }
+            auto fragment = getAtlasVanilla().render(
+                run.text,
+                {.x        = static_cast<int16_t>(bounds.x + TEXTBOX_INSET_X + width),
+                 .y        = static_cast<int16_t>(bounds.y + TEXTBOX_INSET_Y + row * TEXTBOX_LINE_HEIGHT),
+                 .baseClut = 1,
+                 .color    = run.color});
+            width += fragment.getWidth();
+            if (visibleRuns == 1)
+                rowText = dtl::move(fragment);
+            else {
+                rowText.tpage  = fragment.tpage;
+                rowText.height = fragment.height;
+                // AtlasString prepends packets. Reverse run blocks, retaining forward glyph order in each.
+                remaining -= fragment.data.size();
+                dtl::copy(fragment.data.begin(), fragment.data.end(), rowText.data.data() + remaining);
+            }
+        }
+        rowText.width = width;
+        text[row]     = dtl::move(rowText);
+    }
+}
+
+void Textbox::openFrom(RECT start)
+{
+    origin = start;
+    frame  = UIBox(bounds, style, start);
+}
+
 void Textbox::tick()
 {
     frame.tick();
 }
 
+[[gnu::optimize("Os")]]
 void Textbox::close(dtl::optional<RECT> target)
 {
     if (frame.getState() == UIBox::State::CLOSING || isClosed()) return;

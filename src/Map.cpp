@@ -1,4 +1,5 @@
 #include "Map.hpp"
+#include "TamerNotice.hpp"
 
 #include "AtlasFont.hpp"
 #include "Camera.hpp"
@@ -1491,6 +1492,7 @@ extern "C"
 
     void changeMap(uint32_t map, uint32_t exit)
     {
+        cancelTamerNotice();
         unloadMap();
         removeMapEntities();
         clearDroppedItems();

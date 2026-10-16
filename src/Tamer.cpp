@@ -1,4 +1,5 @@
 #include "Tamer.hpp"
+#include "TamerNotice.hpp"
 
 #include "Butterfly.hpp"
 #include "Camera.hpp"
@@ -267,23 +268,64 @@ namespace
         return 0xFF;
     }
 
-    void renderAwardSomethingTextbox(int32_t instanceId)
+    dtl::array<uint8_t, 20> pickupName{};
+    uint8_t pickupNameInk{};
+
+    [[gnu::optimize("Os")]]
+    uint8_t noticeColorChannel(uint32_t value, uint32_t modulation)
     {
-        // vanilla doesn't use shadows
-        renderStringNew(0, -125, 45, 255, 36, 704, 120 + 256, 5, 1);
-        renderUIBox(1);
-        TEXTBOX_OPEN_TIMER++;
+        const auto target = dtl::min(uint32_t(31), value * modulation / 128);
+        return target == 0 ? 0 : ((target * 128 + 30) / 31) * 2 - 1;
     }
 
-    void renderItemPickupTextbox(int32_t instanceId)
+    // Frozen vanilla font palette; renderStringNew modulates the name row by color15.
+    TextboxRun noticeRun(const uint8_t* text, uint8_t ink, bool name = false, int16_t gapBefore = 0)
     {
-        // vanilla doesn't use shadows
-        // vanilla uses the take state to determine how many lines to render, but that's just redundant
-        renderStringNew(15, -125, 45, 255, 12, 704, 12 + 256, 5, 1);
-        renderStringNew(0, -125, 57, 255, 12, 704, 24 + 256, 5, 1);
-        renderStringNew(0, -125, 69, 255, 12, 704, 36 + 256, 5, 1);
-        renderUIBox(1);
-        TEXTBOX_OPEN_TIMER++;
+        constexpr uint16_t colors[] =
+            {0, 0x6b5a, 0x7c00, 0x14dc, 0x6a7f, 0x4b73, 0x7eb2, 0x03ff, 0x0400, 0x4210, 0x2e3c, 0, 0, 0, 0, 0};
+        const auto color = colors[ink & 15];
+        return {.text      = reinterpret_cast<const char*>(text),
+                .color     = {noticeColorChannel(color & 31, name ? 0x48 : 128),
+                              noticeColorChannel((color >> 5) & 31, name ? 0x54 : 128),
+                              noticeColorChannel((color >> 10) & 31, name ? 0x7c : 128)},
+                .gapBefore = gapBefore,
+                .visible   = color != 0};
+    }
+
+    RECT noticeOrigin()
+    {
+        const auto pos = getScreenPosition(TAMER_ENTITY, 1);
+        return {static_cast<int16_t>(pos.screenX - 5), static_cast<int16_t>(pos.screenY - 5), 10, 10};
+    }
+
+    void preparePickupText(const uint8_t* message, ItemType item, uint8_t amount)
+    {
+        const auto incoming = COLORCODE_LOWBITS;
+        const auto name     = noticeRun(pickupName.data(), pickupNameInk, true);
+        dtl::array<TextboxRun, 3> fragments;
+        uint8_t suffix[8]{};
+        fragments[0] = noticeRun(message, incoming);
+        if (item != ItemType::NONE) {
+            fragments[1] = noticeRun(getItem(item)->name, 5, false, 4);
+            if (amount > 1) {
+                sprintf(suffix, " x%d", amount);
+                fragments[2] = noticeRun(suffix, 3);
+            }
+            setTextColor(1);
+        }
+        const TextboxRow rows[] = {{&name, 1}, {fragments.data(), fragments.size()}};
+        prepareTamerNotice(rows, 2);
+    }
+
+    bool openNotice()
+    {
+        if (UI_BOX_DATA[1].state != 0 || UI_BOX_DATA[1].frame != 0) return false;
+        return openTamerNotice(noticeOrigin());
+    }
+
+    void closeNotice()
+    {
+        closeTamerNotice(noticeOrigin());
     }
 
     // this function blows up in size otherwise
@@ -400,10 +442,8 @@ namespace
         }
     }
 
-    // TODO: refactor takeChest, pickupItem and awardSomething, as they duplicate a lot of code
     void Tamer_tickTakeChest()
     {
-        RECT textArea = {.x = 0, .y = 12, .width = 256, .height = 200};
         Chest& chest  = CHEST_ARRAY[interactedChest];
         auto itemType = chest.item;
 
@@ -412,34 +452,19 @@ namespace
             Partner_setState(11);
             unsetCameraFollowPlayer();
             entityLookAtLocation(&TAMER_ENTITY, &chest.location);
-            clearTextSubArea(&textArea);
-
-            drawStringNew(&vanillaFont, getDigimonData(DigimonType::TAMER)->name, 704 + 0, 256 + 12);
-            if (chest.isTaken) {
-                drawStringNew(&vanillaFont, emptyChestStr, 704 + 0, 256 + 24);
-            }
-            else {
-                auto offset = drawStringNew(&vanillaFont, findItemStr, 704 + 0, 256 + 24) / 4;
-                setTextColor(5);
-                drawStringNew(&vanillaFont, getItem(itemType)->name, 704 + offset + 1, 256 + 24);
-                setTextColor(1);
-            }
+            memcpy(pickupName.data(), getDigimonData(DigimonType::TAMER)->name, pickupName.size());
+            pickupName[pickupName.size() - 1] = 0;
+            pickupNameInk                     = COLORCODE_LOWBITS;
+            preparePickupText(chest.isTaken ? emptyChestStr : findItemStr,
+                              chest.isTaken ? ItemType::NONE : itemType,
+                              1);
             Tamer_setSubState(1);
         }
         else if (Tamer_getSubState() == 1) {
             if (!tickOpenChestTray(interactedChest)) return;
             if (!isUIBoxAvailable(1)) return;
 
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {.x = -130, .y = 42, .width = 262, .height = 59};
-            RECT source   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-
-            createAnimatedUIBox(1, 0, 2, &target, &source, nullptr, renderItemPickupTextbox);
+            if (!openNotice()) return;
             Tamer_setSubState(chest.isTaken != 0 ? 2 : 4);
             takeItemFrameCount = 0;
         }
@@ -452,7 +477,7 @@ namespace
 
             takeItemFrameCount = 0;
             if (!giveItem(itemType, 1)) {
-                drawStringNew(&vanillaFont, inventoryFullStr, 704 + 0, 256 + 24);
+                preparePickupText(inventoryFullStr, ItemType::NONE, 1);
                 Tamer_setSubState(3);
             }
             else {
@@ -472,15 +497,7 @@ namespace
             Tamer_setSubState(5);
         }
         else if (Tamer_getSubState() == 5) {
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-
-            removeAnimatedUIBox(1, &target);
+            closeNotice();
 
             Tamer_setState(0);
             Partner_setState(1);
@@ -493,44 +510,22 @@ namespace
     void Tamer_tickPickupItem()
     {
         // vanilla has a delay of 4 frames between boxes, but it takes 5 for text to be come visble
-        // TODO bug: the lack of Partner_setState and stopGameTime allows for text stacking
-        RECT textArea = {.x = 0, .y = 12, .width = 256, .height = 200};
         auto itemType = DROPPED_ITEMS[pickedDropId].type;
 
         if (Tamer_getSubState() == 0) {
             startAnimation(&TAMER_ENTITY, 12);
             unsetCameraFollowPlayer();
-            clearTextSubArea(&textArea);
-            drawStringNew(&vanillaFont, getDigimonData(DigimonType::TAMER)->name, 704 + 0, 256 + 12);
-            auto offset = drawStringNew(&vanillaFont, findItemStr, 704 + 0, 256 + 24) / 4;
-            setTextColor(5);
-            auto nameOffset = drawStringNew(&vanillaFont, getItem(itemType)->name, 704 + offset + 1, 256 + 24) / 4;
-            const uint8_t pickupAmount = getDroppedItemAmount(pickedDropId);
-            if (pickupAmount > 1) {
-                setTextColor(3);
-                uint8_t suffix[8];
-                sprintf(suffix, " x%d", pickupAmount);
-                drawStringNew(&vanillaFont, suffix, 704 + offset + 1 + nameOffset, 256 + 24);
-            }
-            setTextColor(1);
-
+            memcpy(pickupName.data(), getDigimonData(DigimonType::TAMER)->name, pickupName.size());
+            pickupName[pickupName.size() - 1] = 0;
+            pickupNameInk                     = COLORCODE_LOWBITS;
+            preparePickupText(findItemStr, itemType, getDroppedItemAmount(pickedDropId));
             takeItemFrameCount = 0;
             Tamer_setSubState(1);
         }
         else if (Tamer_getSubState() == 1) {
             if (!isUIBoxAvailable(1)) return;
 
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {.x = -130, .y = 42, .width = 262, .height = 59};
-            RECT source   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-            // vanilla writes TAKE_CHEST_ITEM here, but it's never used so skip that
-
-            createAnimatedUIBox(1, 0, 2, &target, &source, nullptr, renderItemPickupTextbox);
+            if (!openNotice()) return;
             Tamer_setSubState(2);
         }
         else if (Tamer_getSubState() == 2) {
@@ -543,9 +538,7 @@ namespace
             playSound(0, 3);
 
             if (!giveItem(itemType, 0)) {
-                clearTextSubArea(&textArea);
-                drawStringNew(&vanillaFont, getDigimonData(DigimonType::TAMER)->name, 704 + 0, 256 + 12);
-                drawStringNew(&vanillaFont, inventoryFullStr, 704 + 0, 256 + 24);
+                preparePickupText(inventoryFullStr, ItemType::NONE, 1);
                 takeItemFrameCount = 0;
                 Tamer_setSubState(3);
             }
@@ -565,15 +558,7 @@ namespace
             Tamer_setSubState(4);
         }
         else if (Tamer_getSubState() == 4) {
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-
-            removeAnimatedUIBox(1, &target);
+            closeNotice();
 
             pickupItem(pickedDropId);
 
@@ -594,23 +579,17 @@ namespace
             unsetCameraFollowPlayer();
 
             if (hasMedalAwardPending) {
-                clearTextArea();
-                setTextColor(7);
-                // vanilla draws these strings in multiple frames/states
-                drawStringNew(&vanillaFont, medalLine1, 704, 256 + 120);
-                drawStringNew(&vanillaFont, medalLine2, 704, 256 + 132);
-                drawStringNew(&vanillaFont, medalLine3, 704, 256 + 144);
+                const TextboxRun runs[] = {noticeRun(medalLine1, 7),
+                                           noticeRun(medalLine2, 7),
+                                           noticeRun(medalLine3, 7)};
+                const TextboxRow rows[] = {{&runs[0], 1}, {&runs[1], 1}, {&runs[2], 1}};
+                prepareTamerNotice(rows, 3);
             }
             else if (hasLevelsAwardPending) {
-                clearTextArea();
-                if (levelsAwarded > 0) {
-                    setTextColor(7);
-                    drawStringNew(&vanillaFont, tamerLevelUpStr, 704, 256 + 120);
-                }
-                else {
-                    setTextColor(3);
-                    drawStringNew(&vanillaFont, tamerLevelDownStr, 704, 256 + 120);
-                }
+                const auto run =
+                    noticeRun(levelsAwarded > 0 ? tamerLevelUpStr : tamerLevelDownStr, levelsAwarded > 0 ? 7 : 3);
+                const TextboxRow row{&run, 1};
+                prepareTamerNotice(&row, 1);
             }
 
             setTextColor(1);
@@ -619,31 +598,13 @@ namespace
         else if (Tamer_getSubState() == 1) {
             if (!isUIBoxAvailable(1)) return;
 
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {.x = -130, .y = 42, .width = 262, .height = 59};
-            RECT source   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-            // vanilla writes TAKE_CHEST_ITEM here, but it's never used so skip that
-
-            createAnimatedUIBox(1, 0, 2, &target, &source, nullptr, renderAwardSomethingTextbox);
+            if (!openNotice()) return;
             Tamer_setSubState(2);
         }
         else if (Tamer_getSubState() == 2) {
             if (!isKeyDown(BUTTON_CROSS)) return;
 
-            ScreenPos pos = getScreenPosition(TAMER_ENTITY, 1);
-            RECT target   = {
-                .x      = static_cast<int16_t>(pos.screenX - 5),
-                .y      = static_cast<int16_t>(pos.screenY - 5),
-                .width  = 10,
-                .height = 10,
-            };
-
-            removeAnimatedUIBox(1, &target);
+            closeNotice();
             Tamer_setState(0);
             Partner_setState(1);
             setCameraFollowPlayer();
@@ -982,8 +943,17 @@ namespace
 
 extern "C"
 {
+    void prepareTamerSicknessTextbox()
+    {
+        const TextboxRun runs[] = {noticeRun(PARTNER_ENTITY.name, 10), noticeRun(isSickStr, 1, false, 4)};
+        const TextboxRow row{runs, 2};
+        prepareTamerNotice(&row, 1);
+        setTextColor(1);
+    }
+
     void Tamer_setState(uint8_t newState)
     {
+        if (!(newState == 0 && isTamerNoticeClosing())) cancelTamerNotice();
         state    = newState;
         subState = 0;
     }
@@ -995,7 +965,7 @@ extern "C"
 
     void Tamer_setFullState(uint8_t newState, uint8_t newSubState)
     {
-        state    = newState;
+        Tamer_setState(newState);
         subState = newSubState;
     }
 
@@ -1047,6 +1017,7 @@ extern "C"
                 removeTriangleMenu();
                 closeInventoryBoxes();
                 removeUIBox1();
+                cancelTamerNotice();
                 TALKED_TO_ENTITY = static_cast<uint8_t>(collision);
                 callScriptSection(CURRENT_SCRIPT_ID, npc.scriptId, 1);
             }
@@ -1057,12 +1028,20 @@ extern "C"
         auto trigger = getTileTrigger(&TAMER_ENTITY.posData->location);
 
         if (IS_SCRIPT_PAUSED == 1) {
-            if (trigger == 120 && PARTNER_PARA.condition.isPoopy) callScriptSection(0, 1250, 0);
+            if (trigger == 120 && PARTNER_PARA.condition.isPoopy) {
+                cancelTamerNotice();
+                callScriptSection(0, 1250, 0);
+            }
 
-            if (trigger >= 80 && trigger < 110 && isKeyDown(BUTTON_CROSS))
+            if (trigger >= 80 && trigger < 110 && isKeyDown(BUTTON_CROSS)) {
+                cancelTamerNotice();
                 callScriptSection(CURRENT_SCRIPT_ID, trigger, 0);
+            }
 
-            if (trigger >= 50 && trigger < 80) callScriptSection(CURRENT_SCRIPT_ID, trigger, 0);
+            if (trigger >= 50 && trigger < 80) {
+                cancelTamerNotice();
+                callScriptSection(CURRENT_SCRIPT_ID, trigger, 0);
+            }
         }
 
         if (trigger >= 110 && trigger < 120) {
@@ -1095,6 +1074,7 @@ extern "C"
                          int32_t rotY,
                          int32_t rotZ)
     {
+        cancelTamerNotice();
         PLAYER_SHADOW_ENABLED = 1;
         loadMMD(type, EntityType::PLAYER);
         ENTITY_TABLE.tamer = &TAMER_ENTITY;

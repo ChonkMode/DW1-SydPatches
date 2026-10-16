@@ -422,11 +422,7 @@ namespace
 
             if (gotSick) {
                 Tamer_setState(20);
-                clearTextArea();
-                setTextColor(10);
-                auto width = drawStringNew(&vanillaFont, PARTNER_ENTITY.name, 704, 256 + 120) / 4;
-                setTextColor(1);
-                drawStringNew(&vanillaFont, isSickStr, 704 + width + 1, 256 + 120);
+                prepareTamerSicknessTextbox();
             }
 
             if (PARTNER_PARA.sicknessTimer >= 12 && Partner_getState() != 8 && Tamer_getState() == 0 &&

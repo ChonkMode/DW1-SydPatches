@@ -4,6 +4,7 @@
 
 extern "C"
 {
+    void prepareTamerSicknessTextbox();
     void setupTamerOnWarp(int32_t posX, int32_t posY, int32_t posZ, int32_t rotation);
     void Tamer_setState(uint8_t state);
     void setIsStandingOnDrop(bool value);

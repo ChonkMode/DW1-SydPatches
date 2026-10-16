@@ -10,6 +10,21 @@ struct TextboxLine
     RGB8 color       = TEXT_COLOR_WHITE;
 };
 
+// Runs and rows are borrowed only during synchronous text preparation.
+struct TextboxRun
+{
+    const char* text = "";
+    RGB8 color       = TEXT_COLOR_WHITE;
+    int16_t gapBefore{};
+    bool visible = true;
+};
+
+struct TextboxRow
+{
+    const TextboxRun* runs{};
+    uint32_t runCount{};
+};
+
 // Owners retain the concrete type; textboxes own the rendered glyphs.
 // TODO: replace lines pointer and lineCount with something like span/ranges
 class Textbox
@@ -20,9 +35,17 @@ public:
             uint32_t lineCount,
             dtl::optional<RECT> origin = {},
             UIBox::Style style         = {});
+    Textbox(RECT bounds,
+            const TextboxRow* rows,
+            uint32_t rowCount,
+            dtl::optional<RECT> origin = {},
+            UIBox::Style style         = {});
     void tick();
+    void openFrom(RECT start);
+    bool isClosing() const { return frame.getState() == UIBox::State::CLOSING; }
     void close(dtl::optional<RECT> target = {});
     void replacePage(const TextboxLine* lines, uint32_t lineCount);
+    void replacePage(const TextboxRow* rows, uint32_t rowCount);
     void render(int32_t depth);
     bool isOpened();
     bool isClosed();
@@ -32,6 +55,7 @@ protected:
     UIBox frame;
     RECT bounds;
     dtl::optional<RECT> origin;
+    UIBox::Style style;
     dtl::runtime_array<AtlasString> text;
 };
 
