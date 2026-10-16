@@ -312,6 +312,14 @@ void AtlasString::setAlignment(RECT rect, AlignmentX alignX, AlignmentY alignY)
     setPosition(x, y);
 }
 
+void AtlasString::translate(int32_t x, int32_t y)
+{
+    for (auto& entry : data) {
+        entry.x += x;
+        entry.y += y;
+    }
+}
+
 void AtlasString::setPosition(int32_t x, int32_t y)
 {
     const auto old_x = data[0].x;
