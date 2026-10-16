@@ -90,12 +90,14 @@ extern "C"
 
 void* operator new(size_t size)
 {
-    return libapi_malloc3(size);
+    // Ordinary new must return storage even for a zero-length array.
+    return libapi_malloc3(size == 0 ? 1 : size);
 }
 
 void* operator new[](size_t size)
 {
-    return libapi_malloc3(size);
+    // Ordinary new must return storage even for a zero-length array.
+    return libapi_malloc3(size == 0 ? 1 : size);
 }
 
 void* operator new(size_t size, void* p)
@@ -110,20 +112,20 @@ void* operator new[](size_t size, void* p)
 
 void operator delete(void* p) noexcept
 {
-    libapi_free3(p);
+    if (p) libapi_free3(p);
 }
 
 void operator delete(void* p, size_t size) noexcept
 {
-    libapi_free3(p);
+    if (p) libapi_free3(p);
 }
 
 void operator delete[](void* p) noexcept
 {
-    libapi_free3(p);
+    if (p) libapi_free3(p);
 }
 
 void operator delete[](void* p, size_t size) noexcept
 {
-    libapi_free3(p);
+    if (p) libapi_free3(p);
 }
