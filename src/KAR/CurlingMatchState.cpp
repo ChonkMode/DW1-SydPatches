@@ -47,9 +47,8 @@ namespace
         startAnimation(ENTITY_TABLE.getEntityById(0), 2);
         startAnimation(ENTITY_TABLE.getEntityById(1), 2);
         startAnimation(ENTITY_TABLE.getEntityById(KAR_OPPONENT_ENTITY), 2);
-        KAR_resetHints();
+        KAR_end();
         SOME_SCRIPT_SYNC_BIT = 1;
-        removeObject(ObjectID::KAR, KAR_OBJECT_INSTANCE);
         setTextColor(1);
 
         if (KAR_STONE_ROWS[0].score > KAR_STONE_ROWS[1].score) {
@@ -446,7 +445,7 @@ namespace
 
 } // namespace
 
-void KAR_tick()
+void KAR_tickMatch()
 {
     // Vanilla continues this ordered tail even when the state update finishes the match.
     const bool confirmed = KAR_tickHints();

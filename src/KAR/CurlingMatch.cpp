@@ -113,7 +113,7 @@ void KAR_setupMatch(int32_t mode)
 
 void KAR_start()
 {
-    KAR_resetHints();
+    KAR_end();
     SOME_SCRIPT_SYNC_BIT = 0;
     readFile("\\ETCDAT\\KARRING.TMD", KAR_MODEL_BUFFER.data());
     libgs_GsMapModelingData(KAR_MODEL_BUFFER.data() + 1);
@@ -122,6 +122,6 @@ void KAR_start()
     ENTITY_TABLE.getEntityById(0)->isOnMap = 1;
     KAR_MATCH_STATE                        = CurlingMatchState::INITIALIZE;
     KAR_setupMatch(0);
-    addObject(ObjectID::KAR, KAR_OBJECT_INSTANCE, KAR_tickStones, KAR_renderScene);
     KAR_OPPONENT_ENTITY = readPStat(OPPONENT_PROGRESS_STAT) + 2;
+    KAR_createSession();
 }
